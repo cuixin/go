@@ -711,6 +711,10 @@ type MsgpackHandle struct {
 	binaryEncodingType
 }
 
+func (h *MsgpackHandle) GetTagName() string {
+	return "msgpack"
+}
+
 func (h *MsgpackHandle) SetBytesExt(rt reflect.Type, tag uint64, ext BytesExt) (err error) {
 	return h.SetExt(rt, tag, &setExtWrapper{b: ext})
 }

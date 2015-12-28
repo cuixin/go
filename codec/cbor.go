@@ -560,6 +560,10 @@ type CborHandle struct {
 	BasicHandle
 }
 
+func (h *CborHandle) GetTagName() string {
+	return "cbor"
+}
+
 func (h *CborHandle) SetInterfaceExt(rt reflect.Type, tag uint64, ext InterfaceExt) (err error) {
 	return h.SetExt(rt, tag, &setExtWrapper{i: ext})
 }

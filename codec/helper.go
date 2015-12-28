@@ -297,7 +297,7 @@ var (
 	noFieldNameToStructFieldInfoErr = errors.New("no field name passed to parseStructFieldInfo")
 )
 
-var defTypeInfos = NewTypeInfos([]string{"codec", "json"})
+var defTypeInfos = NewTypeInfos([]string{"binc", "json", "msgpack", "cbor", "noop", "simple"})
 
 // Selfer defines methods by which a value can encode or decode itself.
 //
@@ -338,11 +338,11 @@ func (x *BasicHandle) getBasicHandle() *BasicHandle {
 	return x
 }
 
-func (x *BasicHandle) getTypeInfo(rtid uintptr, rt reflect.Type) (pti *typeInfo) {
+func (x *BasicHandle) getTypeInfo(tag string, rtid uintptr, rt reflect.Type) (pti *typeInfo) {
 	if x.TypeInfos != nil {
-		return x.TypeInfos.get(rtid, rt)
+		return x.TypeInfos.get(tag, rtid, rt)
 	}
-	return defTypeInfos.get(rtid, rt)
+	return defTypeInfos.get(tag, rtid, rt)
 }
 
 // Handle is the interface for a specific encoding format.
@@ -355,6 +355,7 @@ type Handle interface {
 	newEncDriver(w *Encoder) encDriver
 	newDecDriver(r *Decoder) decDriver
 	isBinary() bool
+	GetTagName() string
 }
 
 // RawExt represents raw unprocessed extension data.
@@ -766,9 +767,8 @@ func (ti *typeInfo) indexForEncName(name string) int {
 // It is configured with a set of tag keys, which are used to get
 // configuration for the type.
 type TypeInfos struct {
-	infos map[uintptr]*typeInfo
+	infos map[string]map[uintptr]*typeInfo
 	mu    sync.RWMutex
-	tags  []string
 }
 
 // NewTypeInfos creates a TypeInfos given a set of struct tags keys.
@@ -776,30 +776,26 @@ type TypeInfos struct {
 // This allows users customize the struct tag keys which contain configuration
 // of their types.
 func NewTypeInfos(tags []string) *TypeInfos {
-	return &TypeInfos{tags: tags, infos: make(map[uintptr]*typeInfo, 64)}
-}
-
-func (x *TypeInfos) structTag(t reflect.StructTag) (s string) {
-	// check for tags: codec, json, in that order.
-	// this allows seamless support for many configured structs.
-	for _, x := range x.tags {
-		s = t.Get(x)
-		if s != "" {
-			return s
-		}
+	ti := &TypeInfos{infos: make(map[string]map[uintptr]*typeInfo)}
+	for _, tag := range tags {
+		ti.infos[tag] = make(map[uintptr]*typeInfo, 64)
 	}
-	return
+	return ti
 }
 
-func (x *TypeInfos) get(rtid uintptr, rt reflect.Type) (pti *typeInfo) {
+func (x *TypeInfos) structTag(tag string, t reflect.StructTag) (s string) {
+	tagStr := t.Get(tag)
+	return tagStr
+}
+
+func (x *TypeInfos) get(tag string, rtid uintptr, rt reflect.Type) (pti *typeInfo) {
 	var ok bool
 	x.mu.RLock()
-	pti, ok = x.infos[rtid]
+	pti, ok = x.infos[tag][rtid]
 	x.mu.RUnlock()
 	if ok {
 		return
 	}
-
 	// do not hold lock while computing this.
 	// it may lead to duplication, but that's ok.
 	ti := typeInfo{rt: rt, rtid: rtid}
@@ -850,14 +846,14 @@ func (x *TypeInfos) get(rtid uintptr, rt reflect.Type) (pti *typeInfo) {
 	if rt.Kind() == reflect.Struct {
 		var siInfo *structFieldInfo
 		if f, ok := rt.FieldByName(structInfoFieldName); ok {
-			siInfo = parseStructFieldInfo(structInfoFieldName, x.structTag(f.Tag))
+			siInfo = parseStructFieldInfo(structInfoFieldName, x.structTag(tag, f.Tag))
 			ti.toArray = siInfo.toArray
 		}
 		pi := rgetPool.Get()
 		pv := pi.(*rgetPoolT)
 		pv.etypes[0] = ti.baseId
 		vv := rgetT{pv.fNames[:0], pv.encNames[:0], pv.etypes[:1], pv.sfis[:0]}
-		x.rget(rt, rtid, nil, &vv, siInfo)
+		x.rget(tag, rt, rtid, nil, &vv, siInfo)
 		ti.sfip = make([]*structFieldInfo, len(vv.sfis))
 		ti.sfi = make([]*structFieldInfo, len(vv.sfis))
 		copy(ti.sfip, vv.sfis)
@@ -868,15 +864,15 @@ func (x *TypeInfos) get(rtid uintptr, rt reflect.Type) (pti *typeInfo) {
 	// sfi = sfip
 
 	x.mu.Lock()
-	if pti, ok = x.infos[rtid]; !ok {
+	if pti, ok = x.infos[tag][rtid]; !ok {
 		pti = &ti
-		x.infos[rtid] = pti
+		x.infos[tag][rtid] = pti
 	}
 	x.mu.Unlock()
 	return
 }
 
-func (x *TypeInfos) rget(rt reflect.Type, rtid uintptr,
+func (x *TypeInfos) rget(tag string, rt reflect.Type, rtid uintptr,
 	indexstack []int, pv *rgetT, siInfo *structFieldInfo,
 ) {
 	// This will read up the fields and store how to access the value.
@@ -911,7 +907,7 @@ LOOP:
 		if f.PkgPath != "" && !f.Anonymous { // unexported, not embedded
 			continue
 		}
-		stag := x.structTag(f.Tag)
+		stag := x.structTag(tag, f.Tag)
 		if stag == "-" {
 			continue
 		}
@@ -1001,7 +997,7 @@ LOOP2:
 		copy(indexstack2, indexstack)
 		indexstack2[len(indexstack)] = af.idx
 		// indexstack2 := append(append(make([]int, 0, len(indexstack)+4), indexstack...), j)
-		x.rget(af.ft, ftid, indexstack2, pv, siInfo)
+		x.rget(tag, af.ft, ftid, indexstack2, pv, siInfo)
 	}
 }
 

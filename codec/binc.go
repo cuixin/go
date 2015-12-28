@@ -894,6 +894,10 @@ type BincHandle struct {
 	binaryEncodingType
 }
 
+func (h *BincHandle) GetTagName() string {
+	return "binc"
+}
+
 func (h *BincHandle) SetBytesExt(rt reflect.Type, tag uint64, ext BytesExt) (err error) {
 	return h.SetExt(rt, tag, &setExtWrapper{b: ext})
 }

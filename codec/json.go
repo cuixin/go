@@ -1154,6 +1154,10 @@ type JsonHandle struct {
 	IntegerAsString uint8
 }
 
+func (h *JsonHandle) GetTagName() string {
+	return "json"
+}
+
 func (h *JsonHandle) SetInterfaceExt(rt reflect.Type, tag uint64, ext InterfaceExt) (err error) {
 	return h.SetExt(rt, tag, &setExtWrapper{i: ext})
 }

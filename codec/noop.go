@@ -37,6 +37,10 @@ type noopHandle struct {
 	noopDrv // noopDrv is unexported here, so we can get a copy of it when needed.
 }
 
+func (h *noopHandle) GetTagName() string {
+	return "noop"
+}
+
 type noopDrv struct {
 	d    *Decoder
 	e    *Encoder

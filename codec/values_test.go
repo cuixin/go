@@ -37,7 +37,7 @@ type AnonInTestStrucIntf struct {
 }
 
 type TestStruc struct {
-	_struct struct{} `codec:",omitempty"` //set omitempty for every field
+	_struct struct{} `simple:",omitempty" "noop:",omitempty" binc:",omitempty" cbor:",omitempty" msgpack:",omitempty" json:",omitempty"` //set omitempty for every field
 
 	S    string
 	I64  int64
@@ -70,7 +70,7 @@ type TestStruc struct {
 	// make this a ptr, so that it could be set or not.
 	// for comparison (e.g. with msgp), give it a struct tag (so it is not inlined),
 	// make this one omitempty (so it is included if nil).
-	*AnonInTestStrucIntf `codec:",omitempty"`
+	*AnonInTestStrucIntf `simple:",omitempty" noop:",omitempty" binc:",omitempty" cbor:",omitempty" msgpack:",omitempty" json:",omitempty"`
 
 	Nmap       map[string]bool //don't set this, so we can test for nil
 	Nslice     []byte          //don't set this, so we can test for nil
@@ -188,7 +188,7 @@ type Sstructbig struct {
 }
 
 type SstructbigMapBySlice struct {
-	_struct struct{} `codec:",toarray"`
+	_struct struct{} `simple:",toarray" noop:",toarray" binc:",toarray" cbor:",toarray" msgpack:",toarray" json:",toarray""`
 	A       int
 	B       bool
 	c       string

@@ -555,7 +555,7 @@ func (x *genRunner) selfer(encode bool) {
 	x.out(fnSigPfx)
 	x.line(") codecDecodeSelfFromArray(l int, d *" + x.cpfx + "Decoder) {")
 	x.genRequiredMethodVars(false)
-	x.decStructArray(genTopLevelVarName, "l", "return", reflect.ValueOf(t0).Pointer(), t0)
+	x.decStructArray("codec", genTopLevelVarName, "l", "return", reflect.ValueOf(t0).Pointer(), t0)
 	x.line("}")
 	x.line("")
 
@@ -788,7 +788,7 @@ func (x *genRunner) enc(varname string, t reflect.Type) {
 			x.line("z.EncFallback(" + varname + ")")
 			break
 		}
-		x.encStruct(varname, rtid, t)
+		x.encStruct("codec", varname, rtid, t)
 	default:
 		if rtidAdded {
 			delete(x.te, rtid)
@@ -816,12 +816,12 @@ func (x *genRunner) encZero(t reflect.Type) {
 	}
 }
 
-func (x *genRunner) encStruct(varname string, rtid uintptr, t reflect.Type) {
+func (x *genRunner) encStruct(tag, varname string, rtid uintptr, t reflect.Type) {
 	// Use knowledge from structfieldinfo (mbs, encodable fields. Ignore omitempty. )
 	// replicate code in kStruct i.e. for each field, deref type to non-pointer, and call x.enc on it
 
 	// if t === type currently running selfer on, do for all
-	ti := x.ti.get(rtid, t)
+	ti := x.ti.get(tag, rtid, t)
 	i := x.varsfx()
 	sepVarname := genTempVarPfx + "sep" + i
 	numfieldsvar := genTempVarPfx + "q" + i
@@ -1403,8 +1403,8 @@ func (x *genRunner) decMapFallback(varname string, rtid uintptr, t reflect.Type)
 	}
 }
 
-func (x *genRunner) decStructMapSwitch(kName string, varname string, rtid uintptr, t reflect.Type) {
-	ti := x.ti.get(rtid, t)
+func (x *genRunner) decStructMapSwitch(tag, kName string, varname string, rtid uintptr, t reflect.Type) {
+	ti := x.ti.get(tag, rtid, t)
 	tisfi := ti.sfip // always use sequence from file. decStruct expects same thing.
 	x.line("switch (" + kName + ") {")
 	for _, si := range tisfi {
@@ -1482,16 +1482,16 @@ func (x *genRunner) decStructMap(varname, lenvarname string, rtid uintptr, t ref
 		x.line(kName + " := string(" + kName + "Slc)")
 	}
 	x.linef("z.DecSendContainerState(codecSelfer_containerMapValue%s)", x.xs)
-	x.decStructMapSwitch(kName, varname, rtid, t)
+	x.decStructMapSwitch("codec", kName, varname, rtid, t)
 
 	x.line("} // end for " + tpfx + "j" + i)
 	x.linef("z.DecSendContainerState(codecSelfer_containerMapEnd%s)", x.xs)
 }
 
-func (x *genRunner) decStructArray(varname, lenvarname, breakString string, rtid uintptr, t reflect.Type) {
+func (x *genRunner) decStructArray(tag, varname, lenvarname, breakString string, rtid uintptr, t reflect.Type) {
 	tpfx := genTempVarPfx
 	i := x.varsfx()
-	ti := x.ti.get(rtid, t)
+	ti := x.ti.get(tag, rtid, t)
 	tisfi := ti.sfip // always use sequence from file. decStruct expects same thing.
 	x.linef("var %sj%s int", tpfx, i)
 	x.linef("var %sb%s bool", tpfx, i)                        // break

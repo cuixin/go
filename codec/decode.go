@@ -377,7 +377,8 @@ func (z *bytesDecReader) readx(n int) (bs []byte) {
 
 func (z *bytesDecReader) readn1() (v uint8) {
 	if z.a == 0 {
-		panic(io.EOF)
+		// panic(io.EOF)
+		return 0
 	}
 	v = z.b[z.c]
 	z.c++
@@ -1680,7 +1681,7 @@ func (d *Decoder) getDecFn(rt reflect.Type, checkFastpath, checkCodecSelfer bool
 	}
 
 	// debugf("\tCreating new dec fn for type: %v\n", rt)
-	ti := d.h.getTypeInfo(rtid, rt)
+	ti := d.h.getTypeInfo(d.hh.GetTagName(), rtid, rt)
 	fi := &(fn.i)
 	fi.d = d
 	fi.ti = ti

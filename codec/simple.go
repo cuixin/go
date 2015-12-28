@@ -494,6 +494,10 @@ type SimpleHandle struct {
 	binaryEncodingType
 }
 
+func (h *SimpleHandle) GetTagName() string {
+	return "simple"
+}
+
 func (h *SimpleHandle) SetBytesExt(rt reflect.Type, tag uint64, ext BytesExt) (err error) {
 	return h.SetExt(rt, tag, &setExtWrapper{b: ext})
 }

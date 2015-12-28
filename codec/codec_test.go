@@ -1071,7 +1071,7 @@ func doTestAnonCycle(t *testing.T, name string, h Handle) {
 	// just check that you can get typeInfo for T1
 	rt := reflect.TypeOf((*TestAnonCycleT1)(nil)).Elem()
 	rtid := reflect.ValueOf(rt).Pointer()
-	pti := h.getBasicHandle().getTypeInfo(rtid, rt)
+	pti := h.getBasicHandle().getTypeInfo(h.GetTagName(), rtid, rt)
 	logT(t, "pti: %v", pti)
 }
 

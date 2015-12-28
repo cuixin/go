@@ -88,12 +88,12 @@ func TestCborIndefiniteLength(t *testing.T) {
 }
 
 type testCborGolden struct {
-	Base64     string      `codec:"cbor"`
-	Hex        string      `codec:"hex"`
-	Roundtrip  bool        `codec:"roundtrip"`
-	Decoded    interface{} `codec:"decoded"`
-	Diagnostic string      `codec:"diagnostic"`
-	Skip       bool        `codec:"skip"`
+	Base64     string      `cbor:"cbor"`
+	Hex        string      `cbor:"hex"`
+	Roundtrip  bool        `cbor:"roundtrip"`
+	Decoded    interface{} `cbor:"decoded"`
+	Diagnostic string      `cbor:"diagnostic"`
+	Skip       bool        `cbor:"skip"`
 }
 
 // Some tests are skipped because they include numbers outside the range of int64/uint64
